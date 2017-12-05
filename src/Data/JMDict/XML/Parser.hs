@@ -131,10 +131,10 @@ many1 :: MonadThrow m => String -> Consumer Event m (Maybe a) -> Consumer Event 
 many1 s c = (:) <$> X.force s c <*> X.many c
 
 hasAttr :: Name -> X.AttrParser Bool
-hasAttr name = fmap isJust $ X.optionalAttr name
+hasAttr name = fmap isJust $ X.attr name
 
 defaultAttr :: Name -> T.Text -> X.AttrParser T.Text
-defaultAttr name de = X.optionalAttr name >>= \case
+defaultAttr name de = X.attr name >>= \case
     Nothing -> return de
     Just re -> return re
 
@@ -194,7 +194,7 @@ parseSense = X.tagNoAttr "sense" $ Sense
     <*> X.many parseGloss
 
 parseLanguageSource :: MonadThrow m => Consumer Event m (Maybe LanguageSource)
-parseLanguageSource = X.tagName "lsource" parseLanguageSourceAttr $
+parseLanguageSource = X.tag' "lsource" parseLanguageSourceAttr $
     \(lang, ty, was) -> LanguageSource
         <$> X.content
         <*> return lang
@@ -202,13 +202,13 @@ parseLanguageSource = X.tagName "lsource" parseLanguageSourceAttr $
         <*> return was
 
 parseLanguageSourceAttr :: X.AttrParser (T.Text, Bool, Bool)
-parseLanguageSourceAttr = (,,) 
+parseLanguageSourceAttr = (,,)
     <$> defaultAttr (Name "lang" (Just xmlNamespace) Nothing) "eng"
     <*> fmap not (hasAttr "ls_type")
     <*> hasAttr "ls_wasei"
 
 parseGloss :: MonadThrow m => Consumer Event m (Maybe Gloss)
-parseGloss = X.tagName "gloss" parseGlossAttr $ \(lang, gend) -> Gloss
+parseGloss = X.tag' "gloss" parseGlossAttr $ \(lang, gend) -> Gloss
     <$> X.content
     <*> return lang
     <*> return gend
@@ -216,4 +216,4 @@ parseGloss = X.tagName "gloss" parseGlossAttr $ \(lang, gend) -> Gloss
 parseGlossAttr :: X.AttrParser (T.Text, Maybe T.Text)
 parseGlossAttr = (,)
     <$> defaultAttr (Name "lang" (Just xmlNamespace) Nothing) "eng"
-    <*> X.optionalAttr "g_gend"
+    <*> X.attr "g_gend"
