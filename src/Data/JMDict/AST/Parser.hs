@@ -17,6 +17,7 @@ import Data.Maybe
 import Data.Monoid
 import Text.Read
 import Data.JMDict.AST.AST
+import Data.Char
 
 type ParseError = T.Text
 
@@ -54,7 +55,7 @@ makeSense s = Sense
   <*> traverse makeSenseField (s ^. X.senseFields)
   <*> traverse makeSenseMisc (s ^. X.senseMisc)
   <*> pure (s ^. X.senseInfo)
-  <*> traverse makeLanguageSource (s ^. X.senseSources)
+  <*> pure (s ^. X.senseSources)
   <*> makeDialect (s ^. X.senseDialects)
   <*> pure (s ^. X.senseGlosses)
 
@@ -65,12 +66,44 @@ makeKanjiPhrase t = Right $ KanjiPhrase t
 
 -- TODO
 makeReadingPhrase :: T.Text -> Either ParseError ReadingPhrase
-makeReadingPhrase t = Right $ ReadingPhrase t
+makeReadingPhrase t = if isKanaOnly t
+  then Right $ ReadingPhrase t
+  else Left $ "ReadingPhrase: non-kana: " <> t
 
-makeReadingInfo :: [T.Text] -> Either ParseError ReadingInfo
-makeReadingInfo = undefined
-makeKanjiInfo :: [T.Text] -> Either ParseError KanjiInfo
-makeKanjiInfo = undefined
+isKanaOnly :: T.Text -> Bool
+isKanaOnly = (all f) . T.unpack
+  where f c = isKana c
+
+-- 3040 - 30ff
+isKana c = c > l && c < h
+  where l = chr $ 12352
+        h = chr $ 12543
+
+-- 3400 - 9faf
+isKanji c = c > l && c < h
+ where l = chr $ 13312
+       h = chr $ 40879
+
+makeKanjiInfo :: [T.Text] -> Either ParseError (Maybe KanjiInfo)
+makeKanjiInfo [] = Right Nothing
+makeKanjiInfo (t:[])
+  | t == "io" = Right $ Just $ KI_IrregularOkuriganaUsage
+  | t == "iK" = Right $ Just $ KI_IrregularKanjiUsage
+  | t == "ik" = Right $ Just $ KI_IrregularKanaUsage
+  | t == "oK" = Right $ Just $ KI_OutDatedKanji
+  | t == "ateji" = Right $ Just $ KI_Ateji
+  | otherwise = Left $ "makeKanjiInfo: Invalid value:" <> t
+makeKanjiInfo _ = Left "makeKanjiInfo: multiple values"
+
+makeReadingInfo :: [T.Text] -> Either ParseError (Maybe ReadingInfo)
+makeReadingInfo [] = Right Nothing
+makeReadingInfo (t:[])
+  | t == "ok" = Right $ Just $ RI_OutDatedOrObsoleteKanaUsage
+  | t == "ik" = Right $ Just $ RI_IrregularKanaUsage
+  | t == "oik" = Right $ Just $ RI_OldOrIrregularKanaForm
+  | t == "gikun" = Right $ Just $ RI_Gikun
+  | otherwise = Left $ "makeReadingInfo: Invalid value:" <> t
+makeReadingInfo _ = Left "makeReadingInfo: multiple values"
 
 makePriority :: T.Text -> Either ParseError Priority
 makePriority t
@@ -89,21 +122,115 @@ makePriority t
   | otherwise = Left $ "makePriority: Got: \"" <> t <>"\""
 
 makeXref :: T.Text -> Either ParseError Xref
-makeXref = undefined
+makeXref t = case T.splitOn "・" t of
+  (k:r:i:[]) -> (\a b c -> (a,b,c))
+    <$> checkKanji k <*> checkReading r <*> checkInt i
+
+  (kOrR:rOrI:[]) ->
+    if not (isKanaOnly kOrR)
+      then case readMaybe $ T.unpack rOrI of
+             (Just i) -> Right (Just $ KanjiPhrase kOrR, Nothing, Just i)
+             Nothing -> (\r -> (Just $ KanjiPhrase kOrR, r, Nothing))
+               <$> checkReading kOrR
+      else (\i -> (Nothing, Just $ ReadingPhrase kOrR,i))
+           <$> checkInt rOrI
+
+  (kOrR:[]) ->
+    if not (isKanaOnly kOrR)
+      then Right (Just $ KanjiPhrase kOrR, Nothing, Nothing)
+      else Right (Nothing, Just $ ReadingPhrase kOrR, Nothing)
+  _ -> Left $ "makeXref: Unexpected Input" <> t
+  where
+    checkKanji k = if isKanaOnly k
+      then Left $ "makeXref: Expected KanjiPhrase: " <> k
+      else Right $ Just $ KanjiPhrase k
+    checkReading r = if isKanaOnly r
+      then Right $ Just $ ReadingPhrase r
+      else Left $ "makeXref: Expected ReadingPhrase: " <> r
+    checkInt i = case readMaybe $ T.unpack i of
+      (Just i) -> Right $ Just i
+      Nothing -> Left $ "makeXref: Expected Integer: " <> i
+
+
 makeSenseField :: T.Text -> Either ParseError Field
-makeSenseField = undefined
+makeSenseField t
+  | t ==  "comp"    = Right $ FieldComp
+  | t ==  "Buddh"   = Right $ FieldBuddh
+  | t ==  "math"    = Right $ FieldMath
+  | t ==  "ling"    = Right $ FieldLing
+  | t ==  "food"    = Right $ FieldFood
+  | t ==  "med"     = Right $ FieldMed
+  | t ==  "sumo"    = Right $ FieldSumo
+  | t ==  "physics" = Right $ FieldPhysics
+  | t ==  "astron"  = Right $ FieldAstron
+  | t ==  "music"   = Right $ FieldMusic
+  | t ==  "baseb"   = Right $ FieldBaseb
+  | t ==  "mahj"    = Right $ FieldMahj
+  | t ==  "biol"    = Right $ FieldBiol
+  | t ==  "law"     = Right $ FieldLaw
+  | t ==  "chem"    = Right $ FieldChem
+  | t ==  "sports"  = Right $ FieldSports
+  | t ==  "anat"    = Right $ FieldAnat
+  | t ==  "MA"      = Right $ FieldMa
+  | t ==  "geol"    = Right $ FieldGeol
+  | t ==  "finc"    = Right $ FieldFinc
+  | t ==  "bot"     = Right $ FieldBot
+  | t ==  "shogi"   = Right $ FieldShogi
+  | t ==  "Shinto"  = Right $ FieldShinto
+  | t ==  "mil"     = Right $ FieldMil
+  | t ==  "archit"  = Right $ FieldArchit
+  | t ==  "econ"    = Right $ FieldEcon
+  | t ==  "bus"     = Right $ FieldBus
+  | t ==  "engr"    = Right $ FieldEngr
+  | t ==  "zool"    = Right $ FieldZool
+  | otherwise = Left $ "makeSenseField: Invalid value: " <> t
 
 makeSenseMisc :: T.Text -> Either ParseError SenseMisc
-makeSenseMisc = undefined
+makeSenseMisc t
+  | t == "uk"      = Right $ UsuallyKana
+  | t == "abbr"    = Right $ Abbreviation
+  | t == "yoji"    = Right $ Yojijukugo
+  | t == "arch"    = Right $ Archaism
+  | t == "obsc"    = Right $ ObscureTerm
+  | t == "on-mim"  = Right $ OnomatopoeicOrMimeticWord
+  | t == "col"     = Right $ Colloquialism
+  | t == "sl"      = Right $ Slang
+  | t == "id"      = Right $ IdiomaticExpression
+  | t == "hon"     = Right $ Honorific
+  | t == "derog"   = Right $ Derogatory
+  | t == "pol"     = Right $ Polite
+  | t == "obs"     = Right $ ObsoleteTerm
+  | t == "proverb" = Right $ Proverb
+  | t == "sens"    = Right $ Sensitive
+  | t == "hum"     = Right $ Humble
+  | t == "vulg"    = Right $ Vulgar
+  | t == "joc"     = Right $ Jocular
+  | t == "fam"     = Right $ Familiar
+  | t == "chn"     = Right $ Childrens
+  | t == "fem"     = Right $ FemaleTerm
+  | t == "male"    = Right $ MaleTerm
+  | t == "m-sl"    = Right $ MangaSlang
+  | t == "poet"    = Right $ Poetical
+  | t == "rare"    = Right $ Rare
+  | otherwise = Left $ "makeSenseMisc: Invalid value: " <> t
 
 
-makeLanguageSource
-          :: X.LanguageSource -> Either ParseError LanguageSource
-makeLanguageSource = undefined
-
-
-makeDialect :: [T.Text] -> Either ParseError Dialect
-makeDialect = undefined
+makeDialect :: [T.Text] -> Either ParseError (Maybe Dialect)
+makeDialect [] = Right Nothing
+makeDialect (t:[])
+  | t == "kyb"  = Right $ Just $ KyotoBen
+  | t == "osb"  = Right $ Just $ OsakaBen
+  | t == "ksb"  = Right $ Just $ KansaiBen
+  | t == "ktb"  = Right $ Just $ KantouBen
+  | t == "tsb"  = Right $ Just $ TosaBen
+  | t == "thb"  = Right $ Just $ TouhokuBen
+  | t == "tsug"  = Right $ Just $ TsugaruBen
+  | t == "kyu"  = Right $ Just $ KyuushuuBen
+  | t == "rkb"  = Right $ Just $ RyuukyuuBen
+  | t == "nab"  = Right $ Just $ NaganoBen
+  | t == "hob"  = Right $ Just $ HokkaidoBen
+  | otherwise = Left $ "makeDialect: Invalid value: " <> t
+makeDialect _ = Left $ "makeDialect: multiple values"
 
 makePOS :: [T.Text] -> Either ParseError [PartOfSpeech]
 makePOS ts = fmap catMaybes $ traverse (makePartOfSpeech tSet) ts

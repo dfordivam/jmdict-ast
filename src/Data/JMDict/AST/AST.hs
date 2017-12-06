@@ -30,7 +30,7 @@ data Entry = Entry {
 
 data KanjiElement = KanjiElement {
       _kanjiPhrase :: KanjiPhrase
-    , _kanjiInfo :: KanjiInfo
+    , _kanjiInfo :: Maybe KanjiInfo
     , _kanjiPriority :: [Priority]
     }
     deriving (Show)
@@ -39,7 +39,7 @@ data ReadingElement = ReadingElement {
       _readingPhrase :: ReadingPhrase
     , _readingNoKanji :: Bool
       -- ^ This element, which will usually have a false value, indicates
-      -- that the reading, while associated with the kanji, cannot be regarded
+      -- that the reading, while associated with the kanji, cannot be regjarded
       -- as a true reading of the kanji. It is typically used for words
       -- such as foreign place names, gairaigo which can be in kanji or
       -- katakana, etc.
@@ -47,12 +47,12 @@ data ReadingElement = ReadingElement {
     , _readingRestrictKanji :: [KanjiPhrase]
     -- ^ If non empty then this reading applies to only the given KanjiPhrase
 
-    , _readingInfo :: ReadingInfo
+    , _readingInfo :: Maybe ReadingInfo
     , _readingPriority :: [Priority]
     }
     deriving (Show)
 
-type Xref = (Either KanjiPhrase ReadingPhrase, Maybe Int)
+type Xref = (Maybe KanjiPhrase, Maybe ReadingPhrase, Maybe Int)
 
 data Sense = Sense {
       _senseRestrictKanji :: [KanjiPhrase] -- ^ If null, unrestricted
@@ -63,17 +63,9 @@ data Sense = Sense {
     , _senseFields :: [Field]
     , _senseMisc :: [SenseMisc]
     , _senseInfo :: [T.Text] -- ^ Additional information
-    , _senseSources :: [LanguageSource]
-    , _senseDialect :: Dialect
+    , _senseSources :: [X.LanguageSource]
+    , _senseDialect :: Maybe Dialect
     , _senseGlosses :: [X.Gloss]
-    }
-    deriving (Show)
-
-data LanguageSource = LanguageSource {
-      _sourceOrigin :: T.Text -- ^ Origin word
-    , _sourceLanguage :: T.Text
-    , _sourceFull :: Bool -- ^ Default True
-    , _sourceWaseieigo :: Bool -- ^ Default False
     }
     deriving (Show)
 
@@ -282,7 +274,7 @@ data SenseMisc
  | MaleTerm
  | MangaSlang
  | Poetical
- | Rare
+ | Rare                                       
   deriving (Show)
 
 data Dialect
