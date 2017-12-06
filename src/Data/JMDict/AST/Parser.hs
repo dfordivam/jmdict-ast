@@ -63,7 +63,7 @@ makeAST e = Entry (EntryId $ e ^. X.entryUniqueId)
 makeKanjiElem :: X.KanjiElement -> Either ParseError KanjiElement
 makeKanjiElem k = KanjiElement
   <$> makeKanjiPhrase (k ^. X.kanjiPhrase)
-  <*> makeKanjiInfo (k ^. X.kanjiInfo)
+  <*> traverse makeKanjiInfo (k ^. X.kanjiInfo)
   <*> traverse makePriority (k ^. X.kanjiPriority)
 
 makeReadingElem :: X.ReadingElement -> Either ParseError ReadingElement
@@ -71,7 +71,7 @@ makeReadingElem r = ReadingElement
   <$> makeReadingPhrase (r ^. X.readingPhrase)
   <*> pure (r ^. X.readingNoKanji)
   <*> traverse makeKanjiPhrase (r ^. X.readingRestrictKanji)
-  <*> makeReadingInfo (r ^. X.readingInfo)
+  <*> traverse makeReadingInfo (r ^. X.readingInfo)
   <*> traverse makePriority (r ^. X.readingPriority)
 
 makeSense :: X.Sense -> Either ParseError Sense
@@ -85,7 +85,7 @@ makeSense s = Sense
   <*> traverse makeSenseMisc (s ^. X.senseMisc)
   <*> pure (s ^. X.senseInfo)
   <*> pure (s ^. X.senseSources)
-  <*> makeDialect (s ^. X.senseDialects)
+  <*> traverse makeDialect (s ^. X.senseDialects)
   <*> pure (s ^. X.senseGlosses)
 
 ---------------------------------------------------------------
@@ -101,7 +101,7 @@ makeReadingPhrase t = if isKanaOnly t
 
 isKanaOnly :: T.Text -> Bool
 isKanaOnly = (all f) . T.unpack
-  where f c = isKana c
+  where f c = isKana c || (elem c ['、', '〜'])
 
 -- 3040 - 30ff
 isKana c = c > l && c < h
@@ -113,26 +113,22 @@ isKanji c = c > l && c < h
  where l = chr $ 13312
        h = chr $ 40879
 
-makeKanjiInfo :: [T.Text] -> Either ParseError (Maybe KanjiInfo)
-makeKanjiInfo [] = Right Nothing
-makeKanjiInfo (t:[])
-  | t == "io" = Right $ Just $ KI_IrregularOkuriganaUsage
-  | t == "iK" = Right $ Just $ KI_IrregularKanjiUsage
-  | t == "ik" = Right $ Just $ KI_IrregularKanaUsage
-  | t == "oK" = Right $ Just $ KI_OutDatedKanji
-  | t == "ateji" = Right $ Just $ KI_Ateji
+makeKanjiInfo :: T.Text -> Either ParseError KanjiInfo
+makeKanjiInfo t
+  | t == "io" = Right $ KI_IrregularOkuriganaUsage
+  | t == "iK" = Right $ KI_IrregularKanjiUsage
+  | t == "ik" = Right $ KI_IrregularKanaUsage
+  | t == "oK" = Right $ KI_OutDatedKanji
+  | t == "ateji" = Right $ KI_Ateji
   | otherwise = Left $ "makeKanjiInfo: Invalid value:" <> t
-makeKanjiInfo _ = Left "makeKanjiInfo: multiple values"
 
-makeReadingInfo :: [T.Text] -> Either ParseError (Maybe ReadingInfo)
-makeReadingInfo [] = Right Nothing
-makeReadingInfo (t:[])
-  | t == "ok" = Right $ Just $ RI_OutDatedOrObsoleteKanaUsage
-  | t == "ik" = Right $ Just $ RI_IrregularKanaUsage
-  | t == "oik" = Right $ Just $ RI_OldOrIrregularKanaForm
-  | t == "gikun" = Right $ Just $ RI_Gikun
+makeReadingInfo :: T.Text -> Either ParseError ReadingInfo
+makeReadingInfo t
+  | t == "ok" = Right $ RI_OutDatedOrObsoleteKanaUsage
+  | t == "ik" = Right $ RI_IrregularKanaUsage
+  | t == "oik" = Right $ RI_OldOrIrregularKanaForm
+  | t == "gikun" = Right $ RI_Gikun
   | otherwise = Left $ "makeReadingInfo: Invalid value:" <> t
-makeReadingInfo _ = Left "makeReadingInfo: multiple values"
 
 makePriority :: T.Text -> Either ParseError Priority
 makePriority t
@@ -150,26 +146,32 @@ makePriority t
       Nothing -> Left $ "makePriority: Got: \"" <> t <>"\""
   | otherwise = Left $ "makePriority: Got: \"" <> t <>"\""
 
+-- Cross-Refrences are tricky for about a dozen cases
+-- because the target element has the special character '・'
+-- Therefore we never return Left here
 makeXref :: T.Text -> Either ParseError Xref
-makeXref t = case T.splitOn "・" t of
-  (k:r:i:[]) -> (\a b c -> (a,b,c))
-    <$> checkKanji k <*> checkReading r <*> checkInt i
-
-  (kOrR:rOrI:[]) ->
-    if not (isKanaOnly kOrR)
-      then case readMaybe $ T.unpack rOrI of
-             (Just i) -> Right (Just $ KanjiPhrase kOrR, Nothing, Just i)
-             Nothing -> (\r -> (Just $ KanjiPhrase kOrR, r, Nothing))
-               <$> checkReading rOrI
-      else (\i -> (Nothing, Just $ ReadingPhrase kOrR,i))
-           <$> checkInt rOrI
-
-  (kOrR:[]) ->
-    if not (isKanaOnly kOrR)
-      then Right (Just $ KanjiPhrase kOrR, Nothing, Nothing)
-      else Right (Nothing, Just $ ReadingPhrase kOrR, Nothing)
-  _ -> Left $ "makeXref: Unexpected Input" <> t
+makeXref t = case retValue of
+  (Right v) -> Right v
+  (Left _) -> fallBack
   where
+    retValue = case T.splitOn "・" t of
+      (k:r:i:[]) -> (\a b c -> (a,b,c))
+        <$> checkKanji k <*> checkReading r <*> checkInt i
+
+      (kOrR:rOrI:[]) ->
+        if not (isKanaOnly kOrR)
+          then case readMaybe $ T.unpack rOrI of
+                 (Just i) -> Right (Just $ KanjiPhrase kOrR, Nothing, Just i)
+                 Nothing -> (\r -> (Just $ KanjiPhrase kOrR, r, Nothing))
+                   <$> checkReading rOrI
+          else (\i -> (Nothing, Just $ ReadingPhrase kOrR,i))
+               <$> checkInt rOrI
+
+      (kOrR:[]) ->
+        if not (isKanaOnly kOrR)
+          then Right (Just $ KanjiPhrase kOrR, Nothing, Nothing)
+          else Right (Nothing, Just $ ReadingPhrase kOrR, Nothing)
+      _ -> Left $ "makeXref: Unexpected Input" <> t
     checkKanji k = if isKanaOnly k
       then Left $ "makeXref: Expected KanjiPhrase: " <> k
       else Right $ Just $ KanjiPhrase k
@@ -179,6 +181,12 @@ makeXref t = case T.splitOn "・" t of
     checkInt i = case readMaybe $ T.unpack i of
       (Just i) -> Right $ Just i
       Nothing -> Left $ "makeXref: Expected Integer: " <> i
+
+    fallBack = if (isKanaOnly t)
+      then Right $
+        (Nothing, (Just $ ReadingPhrase t), Nothing)
+      else Right $
+        ((Just $ KanjiPhrase t), Nothing, Nothing)
 
 
 makeSenseField :: T.Text -> Either ParseError Field
@@ -244,22 +252,20 @@ makeSenseMisc t
   | otherwise = Left $ "makeSenseMisc: Invalid value: " <> t
 
 
-makeDialect :: [T.Text] -> Either ParseError (Maybe Dialect)
-makeDialect [] = Right Nothing
-makeDialect (t:[])
-  | t == "kyb"  = Right $ Just $ KyotoBen
-  | t == "osb"  = Right $ Just $ OsakaBen
-  | t == "ksb"  = Right $ Just $ KansaiBen
-  | t == "ktb"  = Right $ Just $ KantouBen
-  | t == "tsb"  = Right $ Just $ TosaBen
-  | t == "thb"  = Right $ Just $ TouhokuBen
-  | t == "tsug"  = Right $ Just $ TsugaruBen
-  | t == "kyu"  = Right $ Just $ KyuushuuBen
-  | t == "rkb"  = Right $ Just $ RyuukyuuBen
-  | t == "nab"  = Right $ Just $ NaganoBen
-  | t == "hob"  = Right $ Just $ HokkaidoBen
+makeDialect :: T.Text -> Either ParseError Dialect
+makeDialect t
+  | t == "kyb"  = Right $ KyotoBen
+  | t == "osb"  = Right $ OsakaBen
+  | t == "ksb"  = Right $ KansaiBen
+  | t == "ktb"  = Right $ KantouBen
+  | t == "tsb"  = Right $ TosaBen
+  | t == "thb"  = Right $ TouhokuBen
+  | t == "tsug"  = Right $ TsugaruBen
+  | t == "kyu"  = Right $ KyuushuuBen
+  | t == "rkb"  = Right $ RyuukyuuBen
+  | t == "nab"  = Right $ NaganoBen
+  | t == "hob"  = Right $ HokkaidoBen
   | otherwise = Left $ "makeDialect: Invalid value: " <> t
-makeDialect _ = Left $ "makeDialect: multiple values"
 
 makePOS :: [T.Text] -> Either ParseError [PartOfSpeech]
 makePOS [] = Right []

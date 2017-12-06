@@ -30,7 +30,7 @@ data Entry = Entry {
 
 data KanjiElement = KanjiElement {
       _kanjiPhrase :: KanjiPhrase
-    , _kanjiInfo :: Maybe KanjiInfo
+    , _kanjiInfo :: [KanjiInfo]
     , _kanjiPriority :: [Priority]
     }
     deriving (Show)
@@ -47,7 +47,7 @@ data ReadingElement = ReadingElement {
     , _readingRestrictKanji :: [KanjiPhrase]
     -- ^ If non empty then this reading applies to only the given KanjiPhrase
 
-    , _readingInfo :: Maybe ReadingInfo
+    , _readingInfo :: [ReadingInfo]
     , _readingPriority :: [Priority]
     }
     deriving (Show)
@@ -64,7 +64,7 @@ data Sense = Sense {
     , _senseMisc :: [SenseMisc]
     , _senseInfo :: [T.Text] -- ^ Additional information
     , _senseSources :: [X.LanguageSource]
-    , _senseDialect :: Maybe Dialect
+    , _senseDialect :: [Dialect]
     , _senseGlosses :: [X.Gloss]
     }
     deriving (Show)
