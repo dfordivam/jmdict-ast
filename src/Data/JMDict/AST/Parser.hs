@@ -18,8 +18,37 @@ import Data.Monoid
 import Text.Read
 import Data.JMDict.AST.AST
 import Data.Char
-
+import Text.Pretty.Simple
+import Data.Conduit.List hiding (catMaybes)
+import Text.XML.Stream.Parse
+import Control.Monad.Trans.Resource
+import Data.IORef
+import Data.Conduit
+import Data.XML.Types
+import Control.Monad.IO.Class
 type ParseError = T.Text
+
+test :: IO () -- [Either ParseError Entry]
+test = do
+  ref <- newIORef 0
+  es <- runResourceT $ parseFile parseSetting "/home/divam/nobup/jmdict/JMdict"
+    $$ X.parseJMDict
+    .| Data.Conduit.List.map makeAST
+    .| Data.Conduit.List.mapM (\x -> liftIO $ printLeft ref x)
+    .| Data.Conduit.List.take 10000000000
+  print =<< readIORef ref
+    -- >>= pPrint
+
+printLeft ref v@(Right _) = do
+  modifyIORef' ref (+ 1)
+  return v
+printLeft ref v@(Left t) = do
+  putStrLn (T.unpack t)
+  return v
+
+parseSetting =
+  def {psDecodeEntities = decodeSimple}
+  where decodeSimple = ContentText
 
 makeAST :: X.Entry -> Either ParseError Entry
 makeAST e = Entry (EntryId $ e ^. X.entryUniqueId)
@@ -131,7 +160,7 @@ makeXref t = case T.splitOn "・" t of
       then case readMaybe $ T.unpack rOrI of
              (Just i) -> Right (Just $ KanjiPhrase kOrR, Nothing, Just i)
              Nothing -> (\r -> (Just $ KanjiPhrase kOrR, r, Nothing))
-               <$> checkReading kOrR
+               <$> checkReading rOrI
       else (\i -> (Nothing, Just $ ReadingPhrase kOrR,i))
            <$> checkInt rOrI
 
@@ -233,6 +262,7 @@ makeDialect (t:[])
 makeDialect _ = Left $ "makeDialect: multiple values"
 
 makePOS :: [T.Text] -> Either ParseError [PartOfSpeech]
+makePOS [] = Right []
 makePOS ts = fmap catMaybes $ traverse (makePartOfSpeech tSet) ts
   where
     tSet = Set.fromList ts
