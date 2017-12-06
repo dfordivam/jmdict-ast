@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Data.JMDict.AST.AST where
 
 import           Control.Applicative hiding (many)
@@ -274,7 +277,7 @@ data SenseMisc
  | MaleTerm
  | MangaSlang
  | Poetical
- | Rare                                       
+ | Rare
   deriving (Show)
 
 data Dialect
@@ -290,3 +293,23 @@ data Dialect
  | NaganoBen
  | HokkaidoBen
   deriving (Show)
+
+makeLenses ''Entry
+makeLenses ''KanjiElement
+makeLenses ''ReadingElement
+makeLenses ''Sense
+makePrisms ''Priority
+makePrisms ''KanjiInfo
+makePrisms ''ReadingInfo
+makePrisms ''PartOfSpeech
+makePrisms ''NounType
+makePrisms ''VerbType
+makePrisms ''RegularVerb
+makePrisms ''IrregularVerb
+makePrisms ''SpecialVerb
+makePrisms ''Adjective
+makePrisms ''Adverb
+makePrisms ''Auxiliary
+makePrisms ''Field
+makePrisms ''SenseMisc
+makePrisms ''Dialect
