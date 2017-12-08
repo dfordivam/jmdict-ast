@@ -15,13 +15,13 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.JMDict.XML.Parser as X
 
 newtype EntryId = EntryId { unEntryId :: Int }
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 newtype KanjiPhrase = KanjiPhrase { unKanjiPhrase :: T.Text }
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 newtype ReadingPhrase = ReadingPhrase { unReadingPhrase :: T.Text }
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 data Entry = Entry {
       _entryUniqueId :: EntryId
