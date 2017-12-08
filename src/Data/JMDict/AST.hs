@@ -83,7 +83,6 @@ data LanguageSource = LanguageSource {
 data Gloss = Gloss {
       _glossDefinition :: T.Text
     , _glossLanguage :: T.Text
-    , _glossGender :: Maybe T.Text -- ^ Unused?
     }
     deriving (Show, Read)
 
