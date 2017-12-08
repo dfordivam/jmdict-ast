@@ -1,18 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Data.JMDict.AST.AST where
+module Data.JMDict.AST where
 
 import           Control.Applicative hiding (many)
 import           Control.Monad
 import           Control.Lens
-import           Data.Conduit
 import           Data.Default
 import           Data.Maybe
 import qualified Data.Text as T
 import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
-import qualified Data.JMDict.XML.Parser as X
 
 newtype EntryId = EntryId { unEntryId :: Int }
   deriving (Show, Eq, Ord)
@@ -66,11 +64,28 @@ data Sense = Sense {
     , _senseFields :: [Field]
     , _senseMisc :: [SenseMisc]
     , _senseInfo :: [T.Text] -- ^ Additional information
-    , _senseSources :: [X.LanguageSource]
+    , _senseSources :: [LanguageSource]
     , _senseDialect :: [Dialect]
-    , _senseGlosses :: [X.Gloss]
+    , _senseGlosses :: [Gloss]
     }
     deriving (Show)
+
+
+data LanguageSource = LanguageSource {
+      _sourceOrigin :: T.Text -- ^ Origin word
+    , _sourceLanguage :: T.Text
+    , _sourceFull :: Bool -- ^ Default True
+    , _sourceWaseieigo :: Bool -- ^ Default False
+    }
+    deriving (Show, Read)
+
+-- | NB: Doesn't support <pri>, since its not used.
+data Gloss = Gloss {
+      _glossDefinition :: T.Text
+    , _glossLanguage :: T.Text
+    , _glossGender :: Maybe T.Text -- ^ Unused?
+    }
+    deriving (Show, Read)
 
 -------------------------------------------------
 data Priority

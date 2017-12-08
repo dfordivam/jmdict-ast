@@ -1,13 +1,9 @@
-name:                jmdict-xml-parser
+name:                jmdict-ast
 version:             0.2.0.0
-synopsis:            Parser for JMDict XML files.
---description:         This is mostly an internal package, designed to parse the JMDict XML
---file and produce a more usable database. The goal here is to use
---sqlite3 to be more accessible than using jmdictDB which uses
---postgres.
+synopsis:            AST for JMDict
 license:             MIT
 license-file:        LICENSE
-author:              Divam, Jared Hance
+author:              Divam
 maintainer:          dfordivam@gmail.com
 -- copyright:           
 category:            Data
@@ -16,9 +12,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Data.JMDict.XML.Parser
-                       Data.JMDict.AST.AST
-                       Data.JMDict.AST.Parser
+  exposed-modules:   Data.JMDict.AST
 
   -- other-modules:       
   other-extensions:    
@@ -28,13 +22,9 @@ library
                      , TemplateHaskell
 
   build-depends:       base
-                     , conduit
                      , data-default
-                     , exceptions
                      , lens
                      , text
-                     , xml-conduit
-                     , xml-types
                      , containers
 
   hs-source-dirs:      src
