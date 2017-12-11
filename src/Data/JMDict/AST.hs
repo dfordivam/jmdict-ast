@@ -327,3 +327,5 @@ makePrisms ''Auxiliary
 makePrisms ''Field
 makePrisms ''SenseMisc
 makePrisms ''Dialect
+makeLenses ''Gloss
+makeLenses ''LanguageSource
