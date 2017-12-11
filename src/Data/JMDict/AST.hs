@@ -61,7 +61,7 @@ data Sense = Sense {
     , _sensePartOfSpeech :: [PartOfSpeech]
     , _senseRelated :: [Xref]
     , _senseAntonyms :: [Xref]
-    , _senseFields :: [Field]
+    , _senseFields :: [SenseField]
     , _senseMisc :: [SenseMisc]
     , _senseInfo :: [T.Text] -- ^ Additional information
     , _senseSources :: [LanguageSource]
@@ -234,7 +234,7 @@ data Auxiliary
   deriving (Show)
 
 -------------------------------------------------
-data Field
+data SenseField
  = FieldComp
  | FieldBuddh
  | FieldMath
@@ -324,7 +324,7 @@ makePrisms ''SpecialVerb
 makePrisms ''Adjective
 makePrisms ''Adverb
 makePrisms ''Auxiliary
-makePrisms ''Field
+makePrisms ''SenseField
 makePrisms ''SenseMisc
 makePrisms ''Dialect
 makeLenses ''Gloss
