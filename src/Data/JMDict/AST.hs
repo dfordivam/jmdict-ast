@@ -27,20 +27,20 @@ data Entry = Entry {
     , _entryReadingElements :: NonEmpty ReadingElement
     , _entrySenses :: [Sense]
     }
-    deriving (Show)
+    deriving (Eq, Show)
 
 data KanjiElement = KanjiElement {
       _kanjiPhrase :: KanjiPhrase
     , _kanjiInfo :: [KanjiInfo]
     , _kanjiPriority :: [Priority]
     }
-    deriving (Show)
+    deriving (Eq, Show)
 
 data ReadingElement = ReadingElement {
       _readingPhrase :: ReadingPhrase
     , _readingNoKanji :: Bool
       -- ^ This element, which will usually have a false value, indicates
-      -- that the reading, while associated with the kanji, cannot be regjarded
+      -- that the reading, while associated with the kanji, cannot be regarded
       -- as a true reading of the kanji. It is typically used for words
       -- such as foreign place names, gairaigo which can be in kanji or
       -- katakana, etc.
@@ -51,7 +51,7 @@ data ReadingElement = ReadingElement {
     , _readingInfo :: [ReadingInfo]
     , _readingPriority :: [Priority]
     }
-    deriving (Show)
+    deriving (Eq, Show)
 
 type Xref = (Maybe KanjiPhrase, Maybe ReadingPhrase, Maybe Int)
 
@@ -68,7 +68,7 @@ data Sense = Sense {
     , _senseDialect :: [Dialect]
     , _senseGlosses :: [Gloss]
     }
-    deriving (Show)
+    deriving (Eq, Show)
 
 
 data LanguageSource = LanguageSource {
@@ -77,14 +77,14 @@ data LanguageSource = LanguageSource {
     , _sourceFull :: Bool -- ^ Default True
     , _sourceWaseieigo :: Bool -- ^ Default False
     }
-    deriving (Show, Read)
+    deriving (Eq, Show, Read)
 
 -- | NB: Doesn't support <pri>, since its not used.
 data Gloss = Gloss {
       _glossDefinition :: T.Text
     , _glossLanguage :: T.Text
     }
-    deriving (Show, Read)
+    deriving (Eq, Show, Read)
 
 -------------------------------------------------
 data Priority
@@ -97,7 +97,7 @@ data Priority
   | Gai1
   | Gai2
   | FreqOfUse Int
-  deriving (Show)
+  deriving (Eq, Show)
 
    -- 1020 io
    --  828 oK
@@ -111,7 +111,7 @@ data KanjiInfo
   | KI_IrregularKanaUsage
   | KI_OutDatedKanji
   | KI_Ateji
-  deriving (Show)
+  deriving (Eq, Show)
 
     -- 807 ok
     -- 465 ik
@@ -123,7 +123,7 @@ data ReadingInfo
   | RI_IrregularKanaUsage
   | RI_OldOrIrregularKanaForm
   | RI_Gikun
-  deriving (Show)
+  deriving (Eq, Show)
   -- "gikun (meaning as reading) or jukujikun (special kanji reading)"
 
 -------------------------------------------------
@@ -146,7 +146,7 @@ data PartOfSpeech
   | PosCopula
   | PosParticle -- prt
   | PosMisc T.Text
-  deriving (Show)
+  deriving (Eq, Show)
 
 data NounType
   = NounWithSuru -- vs
@@ -156,27 +156,27 @@ data NounType
   | PrefixNoun -- n-pref
   | TemporalNoun -- n-t
   | ProperNoun -- n-pr
-  deriving (Show)
+  deriving (Eq, Show)
 
 data VerbType
   = Regular RegularVerb
   | Irregular IrregularVerb
   | Special SpecialVerb
-  deriving (Show)
+  deriving (Eq, Show)
 
 data RegularVerb
   = Ichidan -- v1
   | Godan VerbEnding
   | Yodan VerbEnding -- v4r v4k v4h v4s
   | Nidan T.Text -- v2a-s v2r-s v2m-s v2y-k
-  deriving (Show)
+  deriving (Eq, Show)
 
 data IrregularVerb
   = SuruI -- vs-s
   | RuIrregular -- vr
   | NuIrregular -- vn
   | GodanRu -- v5r-i
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SpecialVerb
   = Kureru -- v1-s
@@ -187,7 +187,7 @@ data SpecialVerb
   | SuVerb -- vs-c
   | SuruS -- vs-i
   | Zuru -- vz
-  deriving (Show)
+  deriving (Eq, Show)
 
 data Adjective
   = IAdjective -- adj-i
@@ -199,20 +199,20 @@ data Adjective
   | YoiIiAdjective -- adj-ix
   | KuAdjective -- adj-ku
   | ShikuAdjective -- adj-shiku
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- XXX does adv-to imply adv?
 data Adverb
   = Adverb -- adv
   | Adverb_To -- adv-to
-  deriving (Show)
+  deriving (Eq, Show)
 
 data IsTransitive
   = Transitive -- vt
   | Intransitive -- vi
   | BothTransAndIntransitive
   | NotSpecified
-  deriving (Show)
+  deriving (Eq, Show)
 
 data VerbEnding
   = BuEnding -- v5b
@@ -225,13 +225,13 @@ data VerbEnding
   | TuEnding -- v5t
   | UEnding -- v5u
   | HuEnding -- v4h
-  deriving (Show)
+  deriving (Eq, Show)
 
 data Auxiliary
   = Auxiliary -- aux
   | AuxiliaryVerb -- aux-v
   | AuxiliaryAdjective --aux-adj
-  deriving (Show)
+  deriving (Eq, Show)
 
 -------------------------------------------------
 data SenseField
@@ -264,7 +264,7 @@ data SenseField
  | FieldBus
  | FieldEngr
  | FieldZool
-  deriving (Show)
+  deriving (Eq, Show)
 
 data SenseMisc
  = UsuallyKana
@@ -292,7 +292,7 @@ data SenseMisc
  | MangaSlang
  | Poetical
  | Rare
-  deriving (Show)
+  deriving (Eq, Show)
 
 data Dialect
  = KyotoBen
@@ -306,7 +306,7 @@ data Dialect
  | RyuukyuuBen
  | NaganoBen
  | HokkaidoBen
-  deriving (Show)
+  deriving (Eq, Show)
 
 makeLenses ''Entry
 makeLenses ''KanjiElement
