@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Data.JMDict.AST where
@@ -11,15 +12,16 @@ import           Data.Maybe
 import qualified Data.Text as T
 import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
+import GHC.Generics
 
 newtype EntryId = EntryId { unEntryId :: Int }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Generic, Eq, Ord)
 
 newtype KanjiPhrase = KanjiPhrase { unKanjiPhrase :: T.Text }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Generic, Eq, Ord)
 
 newtype ReadingPhrase = ReadingPhrase { unReadingPhrase :: T.Text }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Generic, Eq, Ord)
 
 data Entry = Entry {
       _entryUniqueId :: EntryId
@@ -27,14 +29,14 @@ data Entry = Entry {
     , _entryReadingElements :: NonEmpty ReadingElement
     , _entrySenses :: [Sense]
     }
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
 
 data KanjiElement = KanjiElement {
       _kanjiPhrase :: KanjiPhrase
     , _kanjiInfo :: [KanjiInfo]
     , _kanjiPriority :: [Priority]
     }
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
 
 data ReadingElement = ReadingElement {
       _readingPhrase :: ReadingPhrase
@@ -51,7 +53,7 @@ data ReadingElement = ReadingElement {
     , _readingInfo :: [ReadingInfo]
     , _readingPriority :: [Priority]
     }
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
 
 type Xref = (Maybe KanjiPhrase, Maybe ReadingPhrase, Maybe Int)
 
@@ -68,7 +70,7 @@ data Sense = Sense {
     , _senseDialect :: [Dialect]
     , _senseGlosses :: [Gloss]
     }
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Generic)
 
 
 data LanguageSource = LanguageSource {
@@ -77,14 +79,14 @@ data LanguageSource = LanguageSource {
     , _sourceFull :: Bool -- ^ Default True
     , _sourceWaseieigo :: Bool -- ^ Default False
     }
-    deriving (Eq, Ord, Show, Read)
+    deriving (Eq, Ord, Show, Generic, Read)
 
 -- | NB: Doesn't support <pri>, since its not used.
 data Gloss = Gloss {
       _glossDefinition :: T.Text
     , _glossLanguage :: T.Text
     }
-    deriving (Eq, Ord, Show, Read)
+    deriving (Eq, Ord, Show, Generic, Read)
 
 -------------------------------------------------
 data Priority
@@ -97,7 +99,7 @@ data Priority
   | Gai1
   | Gai2
   | FreqOfUse Int
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
    -- 1020 io
    --  828 oK
@@ -111,7 +113,7 @@ data KanjiInfo
   | KI_IrregularKanaUsage
   | KI_OutDatedKanji
   | KI_Ateji
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
     -- 807 ok
     -- 465 ik
@@ -123,7 +125,7 @@ data ReadingInfo
   | RI_IrregularKanaUsage
   | RI_OldOrIrregularKanaForm
   | RI_Gikun
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
   -- "gikun (meaning as reading) or jukujikun (special kanji reading)"
 
 -------------------------------------------------
@@ -146,7 +148,7 @@ data PartOfSpeech
   | PosCopula
   | PosParticle -- prt
   | PosMisc T.Text
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data NounType
   = NounWithSuru -- vs
@@ -156,27 +158,27 @@ data NounType
   | PrefixNoun -- n-pref
   | TemporalNoun -- n-t
   | ProperNoun -- n-pr
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data VerbType
   = Regular RegularVerb
   | Irregular IrregularVerb
   | Special SpecialVerb
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data RegularVerb
   = Ichidan -- v1
   | Godan VerbEnding
   | Yodan VerbEnding -- v4r v4k v4h v4s
   | Nidan T.Text -- v2a-s v2r-s v2m-s v2y-k
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data IrregularVerb
   = SuruI -- vs-s
   | RuIrregular -- vr
   | NuIrregular -- vn
   | GodanRu -- v5r-i
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data SpecialVerb
   = Kureru -- v1-s
@@ -187,7 +189,7 @@ data SpecialVerb
   | SuVerb -- vs-c
   | SuruS -- vs-i
   | Zuru -- vz
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data Adjective
   = IAdjective -- adj-i
@@ -199,20 +201,20 @@ data Adjective
   | YoiIiAdjective -- adj-ix
   | KuAdjective -- adj-ku
   | ShikuAdjective -- adj-shiku
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 -- XXX does adv-to imply adv?
 data Adverb
   = Adverb -- adv
   | Adverb_To -- adv-to
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data IsTransitive
   = Transitive -- vt
   | Intransitive -- vi
   | BothTransAndIntransitive
   | NotSpecified
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data VerbEnding
   = BuEnding -- v5b
@@ -225,13 +227,13 @@ data VerbEnding
   | TuEnding -- v5t
   | UEnding -- v5u
   | HuEnding -- v4h
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data Auxiliary
   = Auxiliary -- aux
   | AuxiliaryVerb -- aux-v
   | AuxiliaryAdjective --aux-adj
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 -------------------------------------------------
 data SenseField
@@ -264,7 +266,7 @@ data SenseField
  | FieldBus
  | FieldEngr
  | FieldZool
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data SenseMisc
  = UsuallyKana
@@ -292,7 +294,7 @@ data SenseMisc
  | MangaSlang
  | Poetical
  | Rare
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 data Dialect
  = KyotoBen
@@ -306,7 +308,7 @@ data Dialect
  | RyuukyuuBen
  | NaganoBen
  | HokkaidoBen
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
 
 makeLenses ''Entry
 makeLenses ''KanjiElement
