@@ -19,7 +19,6 @@ library
                        LambdaCase
                      , RankNTypes
                      , OverloadedStrings
-                     , TemplateHaskell
 
   build-depends:       base
                      , data-default
